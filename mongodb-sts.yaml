@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongodb
+spec:
+  replicas: 3
+  serviceName: mongodb
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        storageClassName: alicloud-nas
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      volumes:
+        - name: etc-mongod-keyfile
+          secret:
+            defaultMode: 0400
+            secretName: mongod-keyfile
+      containers:
+        - name: mongo
+          image: mongo
+          command: ["mongod", "--bind_ip_all", "--auth", "--replSet", "rs0", "--keyFile", "/etc/mongod.keyfile"]
+          volumeMounts:
+            - mountPath: /data/db
+              name: data
+            - mountPath: /etc/mongod.keyfile
+              name: etc-mongod-keyfile
+              subPath: mongod.keyfile
+
